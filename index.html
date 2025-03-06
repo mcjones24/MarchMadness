@@ -1,24 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>March Madness Draft</title>
+  <title>Fantasy March Madness Draft</title>
   <style>
-    body { font-family: Arial, sans-serif; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
     #teams, #board { 
       display: inline-block; 
       vertical-align: top; 
-      margin: 20px; 
+      width: 45%; 
+      margin-right: 10px; 
     }
     button { 
       display: block; 
       margin: 5px; 
-      padding: 10px; 
+      padding: 8px; 
+      width: 100%; 
     }
+    h1 { text-align: center; }
     h2 { color: #333; }
+    #turn { font-weight: bold; margin: 10px 0; }
   </style>
 </head>
 <body>
-  <h1>My March Madness Draft</h1>
+  <h1>Fantasy March Madness Draft</h1>
+  <div id="turn">Current Turn: Player 1</div>
   <div id="teams">
     <h2>Available Teams</h2>
     <!-- Teams go here -->
@@ -29,29 +34,77 @@
   </div>
 
   <script>
-    // Sample teams (replace with your 64 later)
-    let teams = ["Duke", "UNC", "Kentucky", "Kansas", "UCLA"];
-    let picks = {}; // e.g., {"Player1": ["Duke"], "Player2": ["UNC"]}
-    let currentPlayer = "Player1"; // Temp, we’ll refine this
+    // Version 1.0 - Initial snake draft implementation (March 06, 2025)
+
+    // 64 teams with seeds (simplified names for now)
+    let teams = [
+      "1 Seed A", "1 Seed B", "1 Seed C", "1 Seed D",
+      "2 Seed A", "2 Seed B", "2 Seed C", "2 Seed D",
+      "3 Seed A", "3 Seed B", "3 Seed C", "3 Seed D",
+      "4 Seed A", "4 Seed B", "4 Seed C", "4 Seed D",
+      "5 Seed A", "5 Seed B", "5 Seed C", "5 Seed D",
+      "6 Seed A", "6 Seed B", "6 Seed C", "6 Seed D",
+      "7 Seed A", "7 Seed B", "7 Seed C", "7 Seed D",
+      "8 Seed A", "8 Seed B", "8 Seed C", "8 Seed D",
+      "9 Seed A", "9 Seed B", "9 Seed C", "9 Seed D",
+      "10 Seed A", "10 Seed B", "10 Seed C", "10 Seed D",
+      "11 Seed A", "11 Seed B", "11 Seed C", "11 Seed D",
+      "12 Seed A", "12 Seed B", "12 Seed C", "12 Seed D",
+      "13 Seed A", "13 Seed B", "13 Seed C", "13 Seed D",
+      "14 Seed A", "14 Seed B", "14 Seed C", "14 Seed D",
+      "15 Seed A", "15 Seed B", "15 Seed C", "15 Seed D",
+      "16 Seed A", "16 Seed B", "16 Seed C", "16 Seed D"
+    ];
+
+    // 8 players
+    let players = ["Player 1", "Player 2", "Player 3", "Player 4", 
+                   "Player 5", "Player 6", "Player 7", "Player 8"];
+
+    // Snake draft order (64 picks: 1-8, 8-1, 1-8, ...)
+    let draftOrder = [];
+    for (let round = 0; round < 8; round++) {
+      let roundOrder = (round % 2 === 0) ? players.slice() : players.slice().reverse();
+      draftOrder = draftOrder.concat(roundOrder);
+    }
+    let currentPick = 0;
+    let picks = {}; // e.g., {"Player 1": ["1 Seed A"], ...}
 
     function updateUI() {
-      // Show available teams as buttons
+      // Current turn
+      if (currentPick < 64) {
+        document.getElementById("turn").innerText = 
+          `Current Turn: ${draftOrder[currentPick]} (Pick ${currentPick + 1}/64)`;
+      } else {
+        document.getElementById("turn").innerText = "Draft Complete!";
+      }
+
+      // Available teams
       document.getElementById("teams").innerHTML = "<h2>Available Teams</h2>" + 
         teams.map(team => 
           `<button onclick="pick('${team}')">${team}</button>`
         ).join("");
 
-      // Show draft board
+      // Draft board
       let boardContent = "<h2>Draft Board</h2>";
-      for (let player in picks) {
-        boardContent += `${player}: ${picks[player].join(", ")}<br>`;
-      }
+      players.forEach(player => {
+        let playerPicks = picks[player] || [];
+        boardContent += `${player}: ${playerPicks.join(", ")}<br>`;
+      });
       document.getElementById("board").innerHTML = boardContent;
     }
 
     function pick(team) {
-      let player = prompt("Enter your name:"); // Simple for now
-      if (!player) return; // Cancelled prompt
+      if (currentPick >= 64) {
+        alert("Draft is over!");
+        return;
+      }
+
+      let player = draftOrder[currentPick];
+      let name = prompt(`Confirm your name (should be ${player}):`);
+      if (name !== player) {
+        alert(`It's ${player}'s turn, not ${name}!`);
+        return;
+      }
       if (!teams.includes(team)) {
         alert("Team already taken!");
         return;
@@ -59,7 +112,8 @@
 
       picks[player] = picks[player] || [];
       picks[player].push(team);
-      teams = teams.filter(t => t !== team); // Remove from available
+      teams = teams.filter(t => t !== team);
+      currentPick++;
       updateUI();
     }
 

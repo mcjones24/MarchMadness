@@ -9,15 +9,11 @@
       vertical-align: top; 
       width: 48%; 
     }
-    #teams { 
-      order: 1; /* Left side */
-    }
-    #board { 
-      order: 2; /* Right side */
-    }
+    #teams { order: 1; }
+    #board { order: 2; }
     #team-grid {
       display: grid;
-      grid-template-columns: repeat(4, 200px); /* 20 chars * ~10px per char */
+      grid-template-columns: repeat(4, 200px);
       gap: 5px;
       border: 2px solid #333;
       padding: 10px;
@@ -32,18 +28,30 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .region-header {
+      font-weight: bold;
+      text-align: center;
+      padding: 5px;
+      background-color: #ddd;
+    }
     h1 { text-align: center; }
     h2 { color: #333; margin-bottom: 10px; }
     #turn { font-weight: bold; margin: 10px 0; text-align: center; }
+    #logged-in { text-align: center; margin: 10px 0; }
   </style>
 </head>
 <body>
   <h1>Fantasy March Madness Draft</h1>
+  <div id="logged-in">Logged in as: <span id="current-player">None</span></div>
   <div id="turn">Current Turn: Player 1</div>
   <div id="container">
     <div id="teams">
       <h2>Available Teams</h2>
       <div id="team-grid">
+        <div class="region-header">East</div>
+        <div class="region-header">West</div>
+        <div class="region-header">Midwest</div>
+        <div class="region-header">South</div>
         <!-- Teams go here -->
       </div>
     </div>
@@ -54,9 +62,8 @@
   </div>
 
   <script>
-    // Version 1.1 - Flipped layout, grid for teams, 20-char width (March 06, 2025)
+    // Version 1.4 - Regions as headers, blank spots on pick (March 06, 2025)
 
-    // 64 teams with seeds (simplified names, 20 chars max)
     let teams = [
       "1 Duke", "1 Gonzaga", "1 Kansas", "1 Baylor",
       "2 Kentucky", "2 Villanova", "2 Purdue", "2 Arizona",
@@ -76,45 +83,67 @@
       "16 Wright St", "16 Texas South", "16 Norfolk St", "16 Bryant"
     ];
 
-    // 8 players
-    let players = ["Player 1", "Player 2", "Player 3", "Player 4", 
-                   "Player 5", "Player 6", "Player 7", "Player 8"];
-
-    // Snake draft order (64 picks: 1-8, 8-1, 1-8, ...)
+    let playerSlots = ["Player 1", "Player 2", "Player 3", "Player 4", 
+                       "Player 5", "Player 6", "Player 7", "Player 8"];
+    let playerNames = {};
     let draftOrder = [];
+    let loggedInPlayer = null;
+
+    // Login with custom name
+    while (!loggedInPlayer) {
+      let slot = prompt("Enter your player slot (Player 1 to Player 8):");
+      if (playerSlots.includes(slot)) {
+        let customName = prompt(`Logged in as ${slot}. Set your team name:`);
+        if (customName && customName.trim()) {
+          playerNames[slot] = customName.trim();
+          loggedInPlayer = slot;
+          document.getElementById("current-player").innerText = playerNames[slot];
+        } else {
+          alert("Please enter a valid team name!");
+        }
+      } else {
+        alert("Invalid slot! Use Player 1, Player 2, etc.");
+      }
+    }
+
+    playerSlots.forEach(slot => {
+      if (!playerNames[slot]) playerNames[slot] = slot;
+    });
+
     for (let round = 0; round < 8; round++) {
-      let roundOrder = (round % 2 === 0) ? players.slice() : players.slice().reverse();
+      let roundOrder = (round % 2 === 0) ? playerSlots.slice() : playerSlots.slice().reverse();
       draftOrder = draftOrder.concat(roundOrder);
     }
     let currentPick = 0;
     let picks = {};
 
     function updateUI() {
-      // Current turn
       if (currentPick < 64) {
+        let currentTurnSlot = draftOrder[currentPick];
         document.getElementById("turn").innerText = 
-          `Current Turn: ${draftOrder[currentPick]} (Pick ${currentPick + 1}/64)`;
+          `Current Turn: ${playerNames[currentTurnSlot]} (Pick ${currentPick + 1}/64)`;
       } else {
         document.getElementById("turn").innerText = "Draft Complete!";
       }
 
-      // Available teams in grid
-      let gridContent = "";
-      for (let i = 0; i < 16; i++) { // 16 rows for seeds 1-16
-        for (let j = 0; j < 4; j++) { // 4 columns per seed
+      let gridContent = '<div class="region-header">East</div><div class="region-header">West</div>' +
+                        '<div class="region-header">Midwest</div><div class="region-header">South</div>';
+      for (let i = 0; i < 16; i++) {
+        for (let j = 0; j < 4; j++) {
           let index = i * 4 + j;
-          if (teams[index]) {
+          if (index < teams.length && teams[index] !== null) {
             gridContent += `<button onclick="pick('${teams[index]}')">${teams[index]}</button>`;
+          } else {
+            gridContent += `<div style="height: 34px;"></div>`; // Blank spot
           }
         }
       }
       document.getElementById("team-grid").innerHTML = gridContent;
 
-      // Draft board
       let boardContent = "<h2>Draft Board</h2>";
-      players.forEach(player => {
-        let playerPicks = picks[player] || [];
-        boardContent += `${player}: ${playerPicks.join(", ")}<br>`;
+      playerSlots.forEach(slot => {
+        let playerPicks = picks[slot] || [];
+        boardContent += `${playerNames[slot]}: ${playerPicks.join(", ")}<br>`;
       });
       document.getElementById("board").innerHTML = boardContent;
     }
@@ -125,25 +154,24 @@
         return;
       }
 
-      let player = draftOrder[currentPick];
-      let name = prompt(`Confirm your name (should be ${player}):`);
-      if (name !== player) {
-        alert(`It's ${player}'s turn, not ${name}!`);
+      let currentTurnSlot = draftOrder[currentPick];
+      if (loggedInPlayer !== currentTurnSlot) {
+        alert(`It's ${playerNames[currentTurnSlot]}'s turn, not yours (${playerNames[loggedInPlayer]})!`);
         return;
       }
-      if (!teams.includes(team)) {
+      let teamIndex = teams.indexOf(team);
+      if (teamIndex === -1) {
         alert("Team already taken!");
         return;
       }
 
-      picks[player] = picks[player] || [];
-      picks[player].push(team);
-      teams = teams.filter(t => t !== team);
+      picks[loggedInPlayer] = picks[loggedInPlayer] || [];
+      picks[loggedInPlayer].push(team);
+      teams[teamIndex] = null; // Mark as taken, keep array length
       currentPick++;
       updateUI();
     }
 
-    // Initial load
     updateUI();
   </script>
 </body>

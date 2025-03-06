@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>March Madness Draft</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    #teams, #board { 
+      display: inline-block; 
+      vertical-align: top; 
+      margin: 20px; 
+    }
+    button { 
+      display: block; 
+      margin: 5px; 
+      padding: 10px; 
+    }
+    h2 { color: #333; }
+  </style>
+</head>
+<body>
+  <h1>My March Madness Draft</h1>
+  <div id="teams">
+    <h2>Available Teams</h2>
+    <!-- Teams go here -->
+  </div>
+  <div id="board">
+    <h2>Draft Board</h2>
+    <!-- Picks go here -->
+  </div>
+
+  <script>
+    // Sample teams (replace with your 64 later)
+    let teams = ["Duke", "UNC", "Kentucky", "Kansas", "UCLA"];
+    let picks = {}; // e.g., {"Player1": ["Duke"], "Player2": ["UNC"]}
+    let currentPlayer = "Player1"; // Temp, we’ll refine this
+
+    function updateUI() {
+      // Show available teams as buttons
+      document.getElementById("teams").innerHTML = "<h2>Available Teams</h2>" + 
+        teams.map(team => 
+          `<button onclick="pick('${team}')">${team}</button>`
+        ).join("");
+
+      // Show draft board
+      let boardContent = "<h2>Draft Board</h2>";
+      for (let player in picks) {
+        boardContent += `${player}: ${picks[player].join(", ")}<br>`;
+      }
+      document.getElementById("board").innerHTML = boardContent;
+    }
+
+    function pick(team) {
+      let player = prompt("Enter your name:"); // Simple for now
+      if (!player) return; // Cancelled prompt
+      if (!teams.includes(team)) {
+        alert("Team already taken!");
+        return;
+      }
+
+      picks[player] = picks[player] || [];
+      picks[player].push(team);
+      teams = teams.filter(t => t !== team); // Remove from available
+      updateUI();
+    }
+
+    // Initial load
+    updateUI();
+  </script>
+</body>
+</html>

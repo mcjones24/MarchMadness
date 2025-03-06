@@ -4,56 +4,76 @@
   <title>Fantasy March Madness Draft</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
+    #container { display: flex; justify-content: space-between; }
     #teams, #board { 
-      display: inline-block; 
       vertical-align: top; 
-      width: 45%; 
-      margin-right: 10px; 
+      width: 48%; 
+    }
+    #teams { 
+      order: 1; /* Left side */
+    }
+    #board { 
+      order: 2; /* Right side */
+    }
+    #team-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 200px); /* 20 chars * ~10px per char */
+      gap: 5px;
+      border: 2px solid #333;
+      padding: 10px;
+      background-color: #f9f9f9;
     }
     button { 
-      display: block; 
-      margin: 5px; 
-      padding: 8px; 
       width: 100%; 
+      padding: 8px; 
+      text-align: left;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     h1 { text-align: center; }
-    h2 { color: #333; }
-    #turn { font-weight: bold; margin: 10px 0; }
+    h2 { color: #333; margin-bottom: 10px; }
+    #turn { font-weight: bold; margin: 10px 0; text-align: center; }
   </style>
 </head>
 <body>
   <h1>Fantasy March Madness Draft</h1>
   <div id="turn">Current Turn: Player 1</div>
-  <div id="teams">
-    <h2>Available Teams</h2>
-    <!-- Teams go here -->
-  </div>
-  <div id="board">
-    <h2>Draft Board</h2>
-    <!-- Picks go here -->
+  <div id="container">
+    <div id="teams">
+      <h2>Available Teams</h2>
+      <div id="team-grid">
+        <!-- Teams go here -->
+      </div>
+    </div>
+    <div id="board">
+      <h2>Draft Board</h2>
+      <!-- Picks go here -->
+    </div>
   </div>
 
   <script>
-    // Version 1.0 - Initial snake draft implementation (March 06, 2025)
+    // Version 1.1 - Flipped layout, grid for teams, 20-char width (March 06, 2025)
 
-    // 64 teams with seeds (simplified names for now)
+    // 64 teams with seeds (simplified names, 20 chars max)
     let teams = [
-      "1 Seed A", "1 Seed B", "1 Seed C", "1 Seed D",
-      "2 Seed A", "2 Seed B", "2 Seed C", "2 Seed D",
-      "3 Seed A", "3 Seed B", "3 Seed C", "3 Seed D",
-      "4 Seed A", "4 Seed B", "4 Seed C", "4 Seed D",
-      "5 Seed A", "5 Seed B", "5 Seed C", "5 Seed D",
-      "6 Seed A", "6 Seed B", "6 Seed C", "6 Seed D",
-      "7 Seed A", "7 Seed B", "7 Seed C", "7 Seed D",
-      "8 Seed A", "8 Seed B", "8 Seed C", "8 Seed D",
-      "9 Seed A", "9 Seed B", "9 Seed C", "9 Seed D",
-      "10 Seed A", "10 Seed B", "10 Seed C", "10 Seed D",
-      "11 Seed A", "11 Seed B", "11 Seed C", "11 Seed D",
-      "12 Seed A", "12 Seed B", "12 Seed C", "12 Seed D",
-      "13 Seed A", "13 Seed B", "13 Seed C", "13 Seed D",
-      "14 Seed A", "14 Seed B", "14 Seed C", "14 Seed D",
-      "15 Seed A", "15 Seed B", "15 Seed C", "15 Seed D",
-      "16 Seed A", "16 Seed B", "16 Seed C", "16 Seed D"
+      "1 Duke", "1 Gonzaga", "1 Kansas", "1 Baylor",
+      "2 Kentucky", "2 Villanova", "2 Purdue", "2 Arizona",
+      "3 UNC", "3 Tennessee", "3 UCLA", "3 Auburn",
+      "4 Illinois", "4 Houston", "4 Iowa", "4 Michigan",
+      "5 Texas", "5 Oregon", "5 Alabama", "5 UConn",
+      "6 LSU", "6 Arkansas", "6 Ohio State", "6 Florida",
+      "7 Michigan St", "7 Wisconsin", "7 Seton Hall", "7 USC",
+      "8 Loyola Chi", "8 Oklahoma", "8 Virginia", "8 San Diego St",
+      "9 St. Mary's", "9 Creighton", "9 Memphis", "9 TCU",
+      "10 Miami FL", "10 Xavier", "10 Indiana", "10 Notre Dame",
+      "11 VCU", "11 Drake", "11 Rutgers", "11 Texas A&M",
+      "12 Murray St", "12 New Mex St", "12 UAB", "12 Chattanooga",
+      "13 Vermont", "13 Akron", "13 Yale", "13 South Dakota",
+      "14 Colgate", "14 Montana St", "14 Longwood", "14 Delaware",
+      "15 Jax State", "15 Cal St Full", "15 Georgia St", "15 St Peter's",
+      "16 Wright St", "16 Texas South", "16 Norfolk St", "16 Bryant"
     ];
 
     // 8 players
@@ -67,7 +87,7 @@
       draftOrder = draftOrder.concat(roundOrder);
     }
     let currentPick = 0;
-    let picks = {}; // e.g., {"Player 1": ["1 Seed A"], ...}
+    let picks = {};
 
     function updateUI() {
       // Current turn
@@ -78,11 +98,17 @@
         document.getElementById("turn").innerText = "Draft Complete!";
       }
 
-      // Available teams
-      document.getElementById("teams").innerHTML = "<h2>Available Teams</h2>" + 
-        teams.map(team => 
-          `<button onclick="pick('${team}')">${team}</button>`
-        ).join("");
+      // Available teams in grid
+      let gridContent = "";
+      for (let i = 0; i < 16; i++) { // 16 rows for seeds 1-16
+        for (let j = 0; j < 4; j++) { // 4 columns per seed
+          let index = i * 4 + j;
+          if (teams[index]) {
+            gridContent += `<button onclick="pick('${teams[index]}')">${teams[index]}</button>`;
+          }
+        }
+      }
+      document.getElementById("team-grid").innerHTML = gridContent;
 
       // Draft board
       let boardContent = "<h2>Draft Board</h2>";

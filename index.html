@@ -1,3 +1,4 @@
+<!-- Version 1.7 - Dynamic draft order, height-matched boxes, team picks table (March 06, 2025) -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -5,12 +6,16 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     #container { display: flex; justify-content: space-between; }
-    #teams, #board { 
+    #draft-order, #teams { 
       vertical-align: top; 
       width: 48%; 
     }
-    #teams { order: 1; }
-    #board { order: 2; }
+    #draft-order { 
+      order: 1; 
+      max-height: 650px; /* Matches teams grid height */
+      overflow-y: auto; 
+    }
+    #teams { order: 2; }
     #team-grid {
       display: grid;
       grid-template-columns: repeat(4, 200px);
@@ -38,6 +43,10 @@
     h2 { color: #333; margin-bottom: 10px; }
     #turn { font-weight: bold; margin: 10px 0; text-align: center; }
     #logged-in { text-align: center; margin: 10px 0; }
+    #team-picks { margin-top: 20px; }
+    #team-picks table { width: 100%; border-collapse: collapse; }
+    #team-picks th { text-align: left; padding: 5px; font-weight: bold; }
+    #team-picks td { padding: 5px; }
     #reset { text-align: center; margin-top: 10px; }
   </style>
 </head>
@@ -46,6 +55,10 @@
   <div id="logged-in">Logged in as: <span id="current-player">None</span></div>
   <div id="turn">Current Turn: Player 1</div>
   <div id="container">
+    <div id="draft-order">
+      <h2>Draft Order</h2>
+      <div id="order-list"></div>
+    </div>
     <div id="teams">
       <h2>Available Teams</h2>
       <div id="team-grid">
@@ -56,18 +69,16 @@
         <!-- Teams go here -->
       </div>
     </div>
-    <div id="board">
-      <h2>Draft Board</h2>
-      <!-- Picks go here -->
-    </div>
+  </div>
+  <div id="team-picks">
+    <h2>Team Picks</h2>
+    <table id="picks-table"></table>
   </div>
   <div id="reset">
     <button onclick="resetDraft()">Reset Draft</button>
   </div>
 
   <script>
-    // Version 1.6 - Auto-assign slots, random draft order (March 06, 2025)
-
     const defaultTeams = [
       "1 Duke", "1 Gonzaga", "1 Kansas", "1 Baylor",
       "2 Kentucky", "2 Villanova", "2 Purdue", "2 Arizona",
@@ -96,9 +107,7 @@
     let currentPick = parseInt(localStorage.getItem("currentPick")) || 0;
     let loggedInPlayer = null;
 
-    // Assign slot and name on first visit
     if (!Object.keys(playerNames).length) {
-      // First player: randomize draft order
       let shuffledSlots = playerSlots.slice().sort(() => Math.random() - 0.5);
       for (let round = 0; round < 8; round++) {
         let roundOrder = (round % 2 === 0) ? shuffledSlots.slice() : shuffledSlots.slice().reverse();
@@ -107,7 +116,6 @@
       localStorage.setItem("draftOrder", JSON.stringify(draftOrder));
     }
 
-    // Find next available slot
     let assignedSlot = null;
     for (let slot of playerSlots) {
       if (!playerNames[slot]) {
@@ -120,7 +128,7 @@
           localStorage.setItem("playerNames", JSON.stringify(playerNames));
         } else {
           alert("Please enter a valid team name!");
-          location.reload(); // Force reload if no name
+          location.reload();
         }
         break;
       }
@@ -151,6 +159,14 @@
         document.getElementById("turn").innerText = "Draft Complete!";
       }
 
+      // Draft Order (shifts up)
+      let orderContent = "";
+      for (let i = currentPick; i < Math.min(currentPick + 16, 64); i++) {
+        orderContent += `${i + 1 - currentPick}. ${playerNames[draftOrder[i]]}<br>`;
+      }
+      document.getElementById("order-list").innerHTML = orderContent;
+
+      // Available Teams
       let gridContent = '<div class="region-header">East</div><div class="region-header">West</div>' +
                         '<div class="region-header">Midwest</div><div class="region-header">South</div>';
       for (let i = 0; i < 16; i++) {
@@ -165,12 +181,17 @@
       }
       document.getElementById("team-grid").innerHTML = gridContent;
 
-      let boardContent = "<h2>Draft Board</h2>";
+      // Team Picks Table
+      let tableContent = "";
       playerSlots.forEach(slot => {
         let playerPicks = picks[slot] || [];
-        boardContent += `${playerNames[slot]}: ${playerPicks.join(", ")}<br>`;
+        tableContent += "<tr><th>" + playerNames[slot] + ":</th>";
+        playerPicks.forEach(team => {
+          tableContent += `<td>${team}</td>`;
+        });
+        tableContent += "</tr>";
       });
-      document.getElementById("board").innerHTML = boardContent;
+      document.getElementById("picks-table").innerHTML = tableContent;
     }
 
     function pick(team) {
